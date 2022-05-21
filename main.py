@@ -1,86 +1,153 @@
 import pygame
+from mechanicus import Game
 import neat
 import os
-import time
 import pickle
-pygame.init()
 
-# Constants
-WIDTH, HEIGHT = 800, 800
-WIN = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Machine Spirit")
-FPS = 60
+from mechanicus.arm import Arm
+from mechanicus.food import Food
 
-# Colors
-BLACK = (0, 0, 0)
-BLUE = (75, 100, 255)
-RED = (255, 100, 75)
+GEN = 394
+FPS = 1000
+clock = pygame.time.Clock()
 
-class Arm:
-    def __init__(self):
-        self.x0 = 0 + WIDTH / 2
-        self.y0 = 0 + HEIGHT / 2
-        self.radius = 100
-        self.theta = 0
-        self.color = BLUE
-        self.fixed = False
+class RoboticArm:
 
-    def draw(self, win, prev_x, prev_y, theta):
-        if self.fixed:
-            x0 = self.x0
-            y0 = self.y0
-        else:
-            x0 = prev_x
-            y0 = prev_y
+    def __init__(self, window, width, height):
+        self.game = Game(window, width, height)
+        self.arms = self.game.arms
+        self.food = self.game.food
 
-        theta = -theta
+    def test_ai(self, genome, config):
+        net = neat.nn.FeedForwardNetwork.create(genome, config)
 
-        x = x0 + self.radius * math.cos(theta)
-        y = y0 + self.radius * math.sin(theta)
+        run = True
+        while run:
+            clock.tick(FPS)
 
-        pygame.draw.line(win, BLUE, (x0, y0), (x, y), 5)
-        pygame.draw.circle(win, RED, (x, y), 5)
-        return x, y
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    run = False
+                    break
 
-def main():
-    run = True
-    clock = pygame.time.Clock()
+            output = net.activate((self.arms.theta[0], self.arms.theta[1], self.arms.theta[2], self.food.distance, self.food.angle))
+            decision = output.index(max(output))
 
-    arm1 = Arm()
-    arm1.fixed = True
+            if decision == 0:
+                self.game.rotate_arm(self.arms, 0, True)
+            elif decision == 1:
+                self.game.rotate_arm(self.arms, 0, False)
+            elif decision == 2:
+                self.game.rotate_arm(self.arms, 1, True)
+            elif decision == 3:
+                self.game.rotate_arm(self.arms, 1, False)
+            elif decision == 4:
+                self.game.rotate_arm(self.arms, 2, True)
+            elif decision == 5:
+                self.game.rotate_arm(self.arms, 2, False)
+            else:
+                pass
 
-    arm2 = Arm()
+            game_info = self.game.loop(net, [self.arms], [self.food], [genome])
+            self.game.draw([self.arms], [self.food])
+            pygame.display.update()
+            
+        pygame.quit()
 
-    arm3 = Arm()
+    def train_ai(self, nets, arms, foods, genomes, config):
+        time = 0
+        run = True
+        global GEN
+        GEN += 1
+        while run:
+            clock.tick(FPS)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    quit()
 
-    while run:
-        clock.tick(FPS)
-        WIN.fill(BLACK)
-        
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+            for i, arm in enumerate(arms):
+                arm.time += clock.get_time()
+
+                output = nets[i].activate((arm.theta[0], arm.theta[1], arm.theta[2], self.food.distance, self.food.angle))
+                decision = output.index(max(output))
+
+                if decision == 0:
+                    self.game.rotate_arm(arm, 0, True)
+                elif decision == 1:
+                    self.game.rotate_arm(arm, 0, False)
+                elif decision == 2:
+                    self.game.rotate_arm(arm, 1, True)
+                elif decision == 3:
+                    self.game.rotate_arm(arm, 1, False)
+                elif decision == 4:
+                    self.game.rotate_arm(arm, 2, True)
+                elif decision == 5:
+                    self.game.rotate_arm(arm, 2, False)
+                else:
+                    pass
+
+            
+            game_info = self.game.loop(nets, arms, foods, genomes)
+
+            if len(arms) < 1:
+                # self.caculate_fitness(genome, game_info)
                 run = False
+                break
 
-        theta1 = 0
-        theta2 = 180
-        theta3 = 360
+            self.game.draw(arms, foods, GEN-1)
 
-        prev_x, prev_y = arm1.draw(WIN, 0, 0, theta1)
-        prev_x, prev_y = arm2.draw(WIN, prev_x, prev_y, theta2)
-        prev_x, prev_y = arm3.draw(WIN, prev_x, prev_y, theta3)
+            pygame.display.update()
 
-        pygame.display.update()
-    
-    pygame.quit()
-    sys.exit()
+    def caculate_fitness(self, genome, game_info):
+        genome.fitness += game_info.score
+
+def eval_genomes(genomes, config):
+    width, height = 800, 800
+    window = pygame.display.set_mode((width, height))
+
+    nets = []
+    arms = []
+    foods = []
+    ge = []
+    game = RoboticArm(window, width, height)
+    for genome_id, genome in genomes:
+        net = neat.nn.FeedForwardNetwork.create(genome, config)
+        nets.append(net)
+        arms.append(Arm(3))
+        foods.append(Food())
+        genome.fitness = 0
+        ge.append(genome)
+
+    game.train_ai(nets, arms, foods, ge, config)
+
+def run_neat(config):
+    p = neat.Checkpointer.restore_checkpoint(f'neat-checkpoint-{GEN}')
+    # p = neat.Population(config)
+    p.add_reporter(neat.StdOutReporter(True))
+    stats = neat.StatisticsReporter()
+    p.add_reporter(stats)
+    p.add_reporter(neat.Checkpointer(1))
+
+    winner = p.run(eval_genomes, 50)
+    with open("best.pickle", "wb") as f:
+        pickle.dump(winner, f)
+
+def test_ai(config):
+    width, height = 800, 800
+    window = pygame.display.set_mode((width, height))
+    with open("best.pickle", "rb") as f:
+        winner = pickle.load(f)
+
+    game = RoboticArm(window, width, height)
+    game.test_ai(winner, config)
 
 if __name__ == "__main__":
     local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir, 'config.txt')
+    config_path = os.path.join(local_dir, "config.txt")
 
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
-    
-    run_neat(config)
+    # run_neat(config)
+    test_ai(config)
