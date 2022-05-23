@@ -12,7 +12,7 @@ class Food:
         self.x, self.y = 0, 0
 
     def reset(self):
-        self.distance, self.angle = random.uniform(0, 3*Arm.ARM_LENGTH), random.uniform(0, 360)
+        self.distance, self.angle = random.uniform(0, Arm.MAX_RADIUS), random.uniform(0, 359)
         return self.distance, self.angle
 
     def draw(self, window, window_width, window_height):

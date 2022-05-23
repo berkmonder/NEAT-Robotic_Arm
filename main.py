@@ -7,7 +7,7 @@ import pickle
 from mechanicus.arm import Arm
 from mechanicus.food import Food
 
-GEN = 394
+GEN = 0
 FPS = 1000
 clock = pygame.time.Clock()
 
@@ -34,17 +34,17 @@ class RoboticArm:
             decision = output.index(max(output))
 
             if decision == 0:
-                self.game.rotate_arm(self.arms, 0, True)
+                self.game.rotate_arm(self.arms, genome, 0, True)
             elif decision == 1:
-                self.game.rotate_arm(self.arms, 0, False)
+                self.game.rotate_arm(self.arms, genome, 0, False)
             elif decision == 2:
-                self.game.rotate_arm(self.arms, 1, True)
+                self.game.rotate_arm(self.arms, genome, 1, True)
             elif decision == 3:
-                self.game.rotate_arm(self.arms, 1, False)
+                self.game.rotate_arm(self.arms, genome, 1, False)
             elif decision == 4:
-                self.game.rotate_arm(self.arms, 2, True)
+                self.game.rotate_arm(self.arms, genome, 2, True)
             elif decision == 5:
-                self.game.rotate_arm(self.arms, 2, False)
+                self.game.rotate_arm(self.arms, genome, 2, False)
             else:
                 pass
 
@@ -69,23 +69,24 @@ class RoboticArm:
             for i, arm in enumerate(arms):
                 arm.time += clock.get_time()
 
-                output = nets[i].activate((arm.theta[0], arm.theta[1], arm.theta[2], self.food.distance, self.food.angle))
+                output = nets[i].activate((arm.radius, arm.theta, foods[i].distance, foods[i].angle))
                 decision = output.index(max(output))
-
+                
+                rotated = False
+                lengthened = False
                 if decision == 0:
-                    self.game.rotate_arm(arm, 0, True)
+                    rotated = self.game.rotate_arm(arm, True)
                 elif decision == 1:
-                    self.game.rotate_arm(arm, 0, False)
+                    rotated = self.game.rotate_arm(arm, False)
                 elif decision == 2:
-                    self.game.rotate_arm(arm, 1, True)
+                    lengthened = self.game.lengthen_arm(arm, True)
                 elif decision == 3:
-                    self.game.rotate_arm(arm, 1, False)
-                elif decision == 4:
-                    self.game.rotate_arm(arm, 2, True)
-                elif decision == 5:
-                    self.game.rotate_arm(arm, 2, False)
+                    lengthened = self.game.lengthen_arm(arm, False)
                 else:
                     pass
+
+                if rotated or lengthened:
+                    genomes[i].fitness -= .05
 
             
             game_info = self.game.loop(nets, arms, foods, genomes)
@@ -114,7 +115,7 @@ def eval_genomes(genomes, config):
     for genome_id, genome in genomes:
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         nets.append(net)
-        arms.append(Arm(3))
+        arms.append(Arm())
         foods.append(Food())
         genome.fitness = 0
         ge.append(genome)
@@ -122,14 +123,14 @@ def eval_genomes(genomes, config):
     game.train_ai(nets, arms, foods, ge, config)
 
 def run_neat(config):
-    p = neat.Checkpointer.restore_checkpoint(f'neat-checkpoint-{GEN}')
-    # p = neat.Population(config)
+    # p = neat.Checkpointer.restore_checkpoint(f'neat-checkpoint-{GEN}')
+    p = neat.Population(config)
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(1))
+    p.add_reporter(neat.Checkpointer(20))
 
-    winner = p.run(eval_genomes, 50)
+    winner = p.run(eval_genomes, 500)
     with open("best.pickle", "wb") as f:
         pickle.dump(winner, f)
 
@@ -149,5 +150,5 @@ if __name__ == "__main__":
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
-    # run_neat(config)
-    test_ai(config)
+    run_neat(config)
+    # test_ai(config)
