@@ -93,7 +93,7 @@ class RoboticArm:
             game_info = self.game.loop(nets, arms, foods, genomes)
 
             if len(arms) < 1:
-                # self.caculate_fitness(genome, game_info)
+                self.caculate_fitness(genome, game_info)
                 run = False
                 break
 
