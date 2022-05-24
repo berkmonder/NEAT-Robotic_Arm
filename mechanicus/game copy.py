@@ -18,7 +18,7 @@ class Game:
         self.window_width = window_width
         self.window_height = window_height
 
-        self.arms = Arm()
+        self.arms = Arm(3)
         self.food = Food()
 
         self.score = 0
@@ -26,7 +26,7 @@ class Game:
 
     def _draw_circle(self):
         pygame.draw.circle(self.window, self.RED, (self.window_width//2, self.window_height//2),\
-                            self.arms.MAX_RADIUS + self.arms.HEAD_RADIUS + 2, 2)
+                            (self.arms.number_of_arms * self.arms.ARM_LENGTH) + self.arms.HINGE_RADIUS + 2, 2)
 
     def _draw_score(self):
         score_text = self.SCORE_FONT.render(f"Score: {self.score}", 1, self.WHITE)
@@ -43,13 +43,13 @@ class Game:
     def _handle_colission(self, arm, food, ge):
         # ge.fitness += 1/math.sqrt((food.x - arm.x)**2 + (food.y - arm.y)**2)
         # ge.fitness -= math.sqrt((food.x - arm.x)**2 + (food.y - arm.y)**2) / 1000
-        if (arm.x < food.x + food.RADIUS + arm.HEAD_RADIUS and arm.x > food.x - food.RADIUS - arm.HEAD_RADIUS)\
-            and (arm.y < food.y + food.RADIUS + arm.HEAD_RADIUS and arm.y > food.y - food.RADIUS - arm.HEAD_RADIUS):
+        if (arm.x < food.x + food.RADIUS + arm.HINGE_RADIUS and arm.x > food.x - food.RADIUS - arm.HINGE_RADIUS)\
+            and (arm.y < food.y + food.RADIUS + arm.HINGE_RADIUS and arm.y > food.y - food.RADIUS - arm.HINGE_RADIUS):
             self.score += 1
             food.reset()
             arm.time -= 1000
             # arm.max_time += 1000
-            ge.fitness += 100
+            ge.fitness += 10
 
     def _kill_lasy(self, arm):
         if arm.time > arm.max_time:
@@ -71,19 +71,16 @@ class Game:
         for arm in arms:
             arm.draw(self.window, x0, y0)
         
-    def rotate_arm(self, arm, clockwise=None):
+    def rotate_arm(self, arms, genome, arm, clockwise=True):
         """
         Move the arms.
 
         :returns: boolean indicating if arm rotation is valid.
         """
-        arm.rotate(clockwise)
-        return True
+        genome.fitness -= .5
+        arms.rotate(arm, clockwise)
 
-    def lengthen_arm(self, arm, lengthen=None):
-        arm.lengthen(lengthen)
         return True
-
 
     def loop(self, nets, arms, foods, ge):
         """
