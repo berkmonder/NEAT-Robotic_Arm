@@ -69,25 +69,26 @@ class RoboticArm:
             for i, arm in enumerate(arms):
                 arm.time += clock.get_time()
 
-                output = nets[i].activate((arm.radius, arm.theta, foods[i].distance, foods[i].angle))
+                output = nets[i].activate((arm.theta[0], arm.theta[1], arm.theta[2],
+                                           arm.theta[0] - arm.theta[1], arm.theta[0] - arm.theta[2], arm.theta[1] - arm.theta[2],
+                                           arm.x - foods[i].x, arm.y - foods[i].y,
+                                           foods[i].distance, foods[i].angle, foods[i].x, foods[i].y, ))
                 decision = output.index(max(output))
-                
-                rotated = False
-                lengthened = False
+
                 if decision == 0:
-                    rotated = self.game.rotate_arm(arm, True)
+                    self.game.rotate_arm(arm, genomes[i], 0, True)
                 elif decision == 1:
-                    rotated = self.game.rotate_arm(arm, False)
+                    self.game.rotate_arm(arm, genomes[i], 0, False)
                 elif decision == 2:
-                    lengthened = self.game.lengthen_arm(arm, True)
+                    self.game.rotate_arm(arm, genomes[i], 1, True)
                 elif decision == 3:
-                    lengthened = self.game.lengthen_arm(arm, False)
+                    self.game.rotate_arm(arm, genomes[i], 1, False)
+                elif decision == 4:
+                    self.game.rotate_arm(arm, genomes[i], 2, True)
+                elif decision == 5:
+                    self.game.rotate_arm(arm, genomes[i], 2, False)
                 else:
                     pass
-
-                if rotated or lengthened:
-                    genomes[i].fitness -= .05
-
             
             game_info = self.game.loop(nets, arms, foods, genomes)
 
@@ -115,7 +116,7 @@ def eval_genomes(genomes, config):
     for genome_id, genome in genomes:
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         nets.append(net)
-        arms.append(Arm())
+        arms.append(Arm(3))
         foods.append(Food())
         genome.fitness = 0
         ge.append(genome)
