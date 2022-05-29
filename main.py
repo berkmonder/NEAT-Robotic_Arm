@@ -69,7 +69,7 @@ class RoboticArm:
             for i, arm in enumerate(arms):
                 arm.time += clock.get_time()
 
-                output = nets[i].activate((arm.radius, arm.theta, foods[i].distance, foods[i].angle))
+                output = nets[i].activate((arm.radius, arm.theta, arm.x, arm.y, foods[i].distance, foods[i].angle, foods[i].x, foods[i].y))
                 decision = output.index(max(output))
                 
                 rotated = False
