@@ -1,3 +1,4 @@
+from turtle import width
 import pygame
 import os
 import math
@@ -12,11 +13,11 @@ generation = 0
 class Arm:
     def __init__(self):
         self.surface = pygame.image.load("arm.png")
-        self.surface = pygame.transform.scale(self.surface, (400, 300))
+        self.surface = pygame.transform.scale(self.surface, (300, 100))
         self.rotate_surface = self.surface
         self.pos = [screen_width//2, screen_height//2]
         self.angle = 0
-        self.head = [self.pos[0] + 100, self.pos[1] + 1]
+        self.center = [self.pos[0] + 83, self.pos[1] + 107]
         self.radars = []
         self.radars_for_draw = []
         self.is_alive = True
@@ -34,19 +35,20 @@ class Arm:
             pygame.draw.line(screen, (0, 255, 0), self.head, pos, 1)
             pygame.draw.circle(screen, (0, 255, 0), pos, 5)
 
-    def check_collision(self, map):
+    def check_collision(self, food):
         self.is_alive = True
         for p in self.four_points:
-            if map.get_at((int(p[0]), int(p[1]))) == (255, 255, 255, 255):
+            if food.get_at((int(p[0]), int(p[1]))) == (255, 0, 0, 255):
                 self.food_eaten += 1
                 # TODO: Reset food position
+                print(self.food_eaten)
                 break
 
     def check_radar(self, degree, map):
         pass
 
-    def update(self, map):
-        pass
+    def update(self, food):
+        self.rotate_surface = self.rot_center(self.surface, self.angle)
 
     def get_data(self):
         radars = self.radars
@@ -63,7 +65,12 @@ class Arm:
         return self.food_eaten
 
     def rot_center(self, image, angle):
-        pass
+        orig_rect = image.get_rect()
+        rot_image = pygame.transform.rotate(image, angle)
+        rot_rect = orig_rect.copy()
+        rot_rect.center = rot_image.get_rect().center
+        rot_image = rot_image.subsurface(rot_rect).copy()
+        return rot_image
 
 def run_arm(genomes, config):
 
@@ -86,6 +93,7 @@ def run_arm(genomes, config):
     generation_font = pygame.font.SysFont("Arial", 70)
     font = pygame.font.SysFont("Arial", 30)
     food = pygame.image.load('food.png')
+    food = pygame.transform.scale(food, (50, 50))
 
 
     # Main loop
@@ -95,7 +103,6 @@ def run_arm(genomes, config):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit(0)
-
 
         # Input my data and get result from network
         for index, arm in enumerate(arms):
@@ -111,7 +118,7 @@ def run_arm(genomes, config):
         for i, arm in enumerate(arms):
             if arm.get_alive():
                 remain_arms += 1
-                arm.update(map)
+                arm.update(food)
                 genomes[i][1].fitness += arm.get_reward()
 
         # check
@@ -119,7 +126,8 @@ def run_arm(genomes, config):
             break
 
         # Drawing
-        screen.blit(map, (0, 0))
+        screen.fill((255, 255, 255))
+        screen.blit(food, (screen_width/2+100, screen_height/2-20)) # TODO: what the hell
         for arm in arms:
             if arm.get_alive():
                 arm.draw(screen)
