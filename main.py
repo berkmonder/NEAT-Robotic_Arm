@@ -1,62 +1,63 @@
-import multiprocessing
-import os
-import pickle
-import neat
+import sys
 import numpy as np
+import math
+import random
 
 import gym
+import gym_game
 
-runs_per_net = 2
+def simulate():
+    global epsilon, epsilon_decay
+    for episode in range(MAX_EPISODES):
 
-def eval_genome(genome, config):
-    net = neat.nn.RecurrentNetwork.create(genome, config)
+        # Init environment
+        state = env.reset()
+        total_reward = 0
 
-    fitnesses = []
+        # AI tries up to MAX_TRY times
+        for t in range(MAX_TRY):
 
-    for runs in range(runs_per_net):
-        env = gym.make("Acrobot-v1")
+            # In the beginning, do random action to learn
+            if random.uniform(0, 1) < epsilon:
+                action = env.action_space.sample()
+            else:
+                action = np.argmax(q_table[state])
 
-        observation = env.reset()
+            # Do action and get result
+            next_state, reward, done, _ = env.step(action)
+            total_reward += reward
 
-        fitness = 0.0
-        done = False
-        while not done:
+            # Get correspond q value from state, action pair
+            q_value = q_table[state][action]
+            best_q = np.max(q_table[next_state])
 
-            action = np.argmax(net.activate(observation))
-            observation, reward, done, info = env.step(action)
-            fitness += reward
+            # Q(state, action) <- (1 - a)Q(state, action) + a(reward + rmaxQ(next state, all actions))
+            q_table[state][action] = (1 - learning_rate) * q_value + learning_rate * (reward + gamma * best_q)
 
-        fitnesses.append(fitness)
+            # Set up for the next iteration
+            state = next_state
 
-    return np.mean(fitnesses)
+            # Draw games
+            env.render()
 
+            # When episode is done, print reward
+            if done or t >= MAX_TRY - 1:
+                print("Episode %d finished after %i time steps with total reward = %f." % (episode, t, total_reward))
+                break
 
-def eval_genomes(genomes, config):
-    for genome_id, genome in genomes:
-        genome.fitness = eval_genome(genome, config)
-
-
-def run():
-    local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir, 'config.txt')
-    config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
-                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
-                         config_path)
-
-    pop = neat.Population(config)
-    stats = neat.StatisticsReporter()
-    pop.add_reporter(stats)
-    pop.add_reporter(neat.StdOutReporter(True))
-
-    pe = neat.ParallelEvaluator(multiprocessing.cpu_count(), eval_genome)
-    winner = pop.run(pe.evaluate)
-
-    # Save the winner.
-    with open('winner', 'wb') as f:
-        pickle.dump(winner, f)
-
-    print(winner)
+        # exploring rate decay
+        if epsilon >= 0.005:
+            epsilon *= epsilon_decay
 
 
-if __name__ == '__main__':
-    run()
+if __name__ == "__main__":
+    env = gym.make("Pygame-v0")
+    MAX_EPISODES = 9999
+    MAX_TRY = 1000
+    epsilon = 1
+    epsilon_decay = 0.999
+    learning_rate = 0.1
+    gamma = 0.6
+    num_box = tuple((env.observation_space.high + np.ones(env.observation_space.shape)).astype(int))
+    q_table = np.zeros(num_box + (env.action_space.n,))
+    simulate()
