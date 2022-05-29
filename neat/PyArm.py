@@ -85,7 +85,7 @@ def run_arm(genomes, config):
     clock = pygame.time.Clock()
     generation_font = pygame.font.SysFont("Arial", 70)
     font = pygame.font.SysFont("Arial", 30)
-    map = pygame.image.load('map.png')
+    food = pygame.image.load('food.png')
 
 
     # Main loop
