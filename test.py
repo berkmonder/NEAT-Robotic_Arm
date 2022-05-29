@@ -21,9 +21,16 @@ net = neat.nn.FeedForwardNetwork.create(c, config)
 env = gym.make("Acrobot-v1")
 observation = env.reset()
 
+# print(observation)
+# print(env.action_space)
+
 done = False
 while not done:
-    action = np.argmax(net.activate(observation))
 
-    observation, reward, done, info = env.step(env.action_space.sample())
+    # observation, reward, done, info = env.step(env.action_space.sample())
+    # print(env.action_space.sample())
+
+    action = np.argmax(net.activate(observation))
+    observation, reward, done, info = env.step(action)
+
     env.render()
