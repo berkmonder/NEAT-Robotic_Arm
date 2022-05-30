@@ -15,7 +15,7 @@ class RoboticArm:
 
     def __init__(self, window, width, height):
         self.game = Game(window, width, height)
-        self.arms = self.game.arms
+        self.arm = self.game.arms
         self.food = self.game.food
 
     def test_ai(self, genome, config):
@@ -30,26 +30,22 @@ class RoboticArm:
                     run = False
                     break
 
-            output = net.activate((self.arms.theta[0], self.arms.theta[1], self.arms.theta[2], self.food.distance, self.food.angle))
+            output = net.activate((self.arm.radius-self.food.distance, self.arm.theta-self.food.angle))
             decision = output.index(max(output))
-
+            
             if decision == 0:
-                self.game.rotate_arm(self.arms, genome, 0, True)
+                self.game.rotate_arm(self.arm, True)
             elif decision == 1:
-                self.game.rotate_arm(self.arms, genome, 0, False)
+                self.game.rotate_arm(self.arm, False)
             elif decision == 2:
-                self.game.rotate_arm(self.arms, genome, 1, True)
+                self.game.lengthen_arm(self.arm, True)
             elif decision == 3:
-                self.game.rotate_arm(self.arms, genome, 1, False)
-            elif decision == 4:
-                self.game.rotate_arm(self.arms, genome, 2, True)
-            elif decision == 5:
-                self.game.rotate_arm(self.arms, genome, 2, False)
+                self.game.lengthen_arm(self.arm, False)
             else:
                 pass
 
-            game_info = self.game.loop(net, [self.arms], [self.food], [genome])
-            self.game.draw([self.arms], [self.food])
+            game_info = self.game.loop(net, [self.arm], [self.food], [genome])
+            self.game.draw([self.arm], [self.food])
             pygame.display.update()
             
         pygame.quit()
@@ -69,24 +65,24 @@ class RoboticArm:
             for i, arm in enumerate(arms):
                 arm.time += clock.get_time()
 
-                output = nets[i].activate((arm.radius, arm.theta, arm.x, arm.y, foods[i].distance, foods[i].angle, foods[i].x, foods[i].y))
+                output = nets[i].activate((arm.radius-foods[i].distance, arm.theta-foods[i].angle))
                 decision = output.index(max(output))
                 
-                rotated = False
-                lengthened = False
                 if decision == 0:
-                    rotated = self.game.rotate_arm(arm, True)
+                    self.game.rotate_arm(arm, True)
                 elif decision == 1:
-                    rotated = self.game.rotate_arm(arm, False)
+                    self.game.rotate_arm(arm, False)
                 elif decision == 2:
-                    lengthened = self.game.lengthen_arm(arm, True)
+                    self.game.lengthen_arm(arm, True)
                 elif decision == 3:
-                    lengthened = self.game.lengthen_arm(arm, False)
+                    self.game.lengthen_arm(arm, False)
                 else:
                     pass
 
-                if rotated or lengthened:
-                    genomes[i].fitness -= .05
+                # if genomes[i].fitness >= 300:
+                if self.game.score >= 500:
+                    run = False
+                    break
 
             
             game_info = self.game.loop(nets, arms, foods, genomes)
@@ -123,14 +119,14 @@ def eval_genomes(genomes, config):
     game.train_ai(nets, arms, foods, ge, config)
 
 def run_neat(config):
-    # p = neat.Checkpointer.restore_checkpoint(f'neat-checkpoint-{GEN}')
-    p = neat.Population(config)
+    p = neat.Checkpointer.restore_checkpoint(f'neat-checkpoint-{GEN}')
+    # p = neat.Population(config)
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(20))
+    p.add_reporter(neat.Checkpointer(1))
 
-    winner = p.run(eval_genomes, 500)
+    winner = p.run(eval_genomes, 50)
     with open("best.pickle", "wb") as f:
         pickle.dump(winner, f)
 
@@ -150,5 +146,5 @@ if __name__ == "__main__":
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
-    run_neat(config)
-    # test_ai(config)
+    # run_neat(config)
+    test_ai(config)

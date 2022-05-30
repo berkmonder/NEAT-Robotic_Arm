@@ -46,10 +46,11 @@ class Game:
         if (arm.x < food.x + food.RADIUS + arm.HEAD_RADIUS and arm.x > food.x - food.RADIUS - arm.HEAD_RADIUS)\
             and (arm.y < food.y + food.RADIUS + arm.HEAD_RADIUS and arm.y > food.y - food.RADIUS - arm.HEAD_RADIUS):
             self.score += 1
+            arm.score += 1
             food.reset()
-            arm.time -= 1000
+            arm.time = 0
             # arm.max_time += 1000
-            ge.fitness += 100
+            ge.fitness += 10
 
     def _kill_lasy(self, arm):
         if arm.time > arm.max_time:
@@ -78,11 +79,9 @@ class Game:
         :returns: boolean indicating if arm rotation is valid.
         """
         arm.rotate(clockwise)
-        return True
 
     def lengthen_arm(self, arm, lengthen=None):
         arm.lengthen(lengthen)
-        return True
 
 
     def loop(self, nets, arms, foods, ge):
