@@ -1,4 +1,8 @@
-YouTube Project
+# Robotic Arm with NEAT
+---
+### Requirements
+> **NEAT** : pip install neat-python
 
-1. Custom OpenAI Gym environment
-2. NEAT-python
+> **Pygame** : pip install pygame
+---
+enjoy ✌️
