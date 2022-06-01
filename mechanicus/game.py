@@ -18,15 +18,15 @@ class Game:
         self.window_width = window_width
         self.window_height = window_height
 
-        self.arms = Arm()
-        self.food = Food()
+        self.arm = Arm(2, window_width//2, window_height//2)
+        self.food = Food(window_width//2, window_height//2)
 
-        self.score = 0
         self.window = window
+        self.score = 0
 
     def _draw_circle(self):
-        pygame.draw.circle(self.window, self.RED, (self.window_width//2, self.window_height//2),\
-                            self.arms.MAX_RADIUS + self.arms.HEAD_RADIUS + 2, 2)
+        pygame.draw.circle(self.window, self.WHITE, (self.window_width//2, self.window_height//2),\
+                           self.arm.MAX_RADIUS + self.arm.HEAD_RADIUS + 2, 2)
 
     def _draw_score(self):
         score_text = self.SCORE_FONT.render(f"Score: {self.score}", 1, self.WHITE)
@@ -43,16 +43,15 @@ class Game:
     def _handle_colission(self, arm, food, ge):
         # ge.fitness += 1/math.sqrt((food.x - arm.x)**2 + (food.y - arm.y)**2)
         # ge.fitness -= math.sqrt((food.x - arm.x)**2 + (food.y - arm.y)**2) / 1000
-        if (arm.x < food.x + food.RADIUS + arm.HEAD_RADIUS and arm.x > food.x - food.RADIUS - arm.HEAD_RADIUS)\
-            and (arm.y < food.y + food.RADIUS + arm.HEAD_RADIUS and arm.y > food.y - food.RADIUS - arm.HEAD_RADIUS):
+        if (arm.x[-1] < food.x + food.RADIUS + arm.HEAD_RADIUS and arm.x[-1] > food.x - food.RADIUS - arm.HEAD_RADIUS)\
+            and (arm.y[-1] < food.y + food.RADIUS + arm.HEAD_RADIUS and arm.y[-1] > food.y - food.RADIUS - arm.HEAD_RADIUS):
             self.score += 1
             arm.score += 1
             food.reset()
             arm.time = 0
-            # arm.max_time += 1000
             ge.fitness += 10
 
-    def _kill_lasy(self, arm):
+    def _kill_lazy(self, arm):
         if arm.time > arm.max_time:
             return True
 
@@ -64,25 +63,19 @@ class Game:
         self._draw_generation(gen)
         self._draw_number_of_arms(len(arms))
 
-        x0, y0 = self.window_width//2, self.window_height//2
-
         for food in foods:
-            food.draw(self.window, x0, y0)
+            food.draw(self.window)
 
         for arm in arms:
-            arm.draw(self.window, x0, y0)
+            arm.draw(self.window)
         
-    def rotate_arm(self, arm, clockwise=None):
+    def rotate_arm(self, arms, arm, clockwise=None):
         """
         Move the arms.
 
         :returns: boolean indicating if arm rotation is valid.
         """
-        arm.rotate(clockwise)
-
-    def lengthen_arm(self, arm, lengthen=None):
-        arm.lengthen(lengthen)
-
+        arms.rotate(arm, clockwise)
 
     def loop(self, nets, arms, foods, ge):
         """
@@ -93,7 +86,7 @@ class Game:
         for i, arm in enumerate(arms):
             self._handle_colission(arm, foods[i], ge[i])
 
-            if self._kill_lasy(arm):
+            if self._kill_lazy(arm):
                 arms.pop(i)
                 foods.pop(i)
                 nets.pop(i)
@@ -104,9 +97,10 @@ class Game:
         return game_info
 
     def reset(self):
-        """Resets the entire game."""
-        self.score = 0
-        self.time = 0
-        self.food.reset()
-        for arm in self.arms:
-            arm.reset()
+        pass
+        # """Resets the entire game."""
+        # self.score = 0
+        # self.time = 0
+        # self.food.reset()
+        # for arm in self.arms:
+        #     arm.reset()

@@ -1,4 +1,4 @@
-import pygame
+import pygame, math
 from mechanicus import Game
 import neat
 import os
@@ -15,7 +15,7 @@ class RoboticArm:
 
     def __init__(self, window, width, height):
         self.game = Game(window, width, height)
-        self.arm = self.game.arms
+        self.arm = self.game.arm
         self.food = self.game.food
 
     def test_ai(self, genome, config):
@@ -30,7 +30,7 @@ class RoboticArm:
                     run = False
                     break
 
-            output = net.activate((self.arm.radius-self.food.distance, self.arm.theta-self.food.angle))
+            output = net.activate((0, 0))
             decision = output.index(max(output))
             
             if decision == 0:
@@ -44,8 +44,8 @@ class RoboticArm:
             else:
                 pass
 
-            game_info = self.game.loop(net, [self.arm], [self.food], [genome])
-            self.game.draw([self.arm], [self.food])
+            # game_info = self.game.loop(net, [self.arm], [self.food], [genome])
+            self.game.draw(self.arm, self.food)
             pygame.display.update()
             
         pygame.quit()
@@ -62,36 +62,36 @@ class RoboticArm:
                     quit()
 
 
-            for i, arm in enumerate(arms):
+            for i, (arm, food) in enumerate(zip(arms, foods)):
                 arm.time += clock.get_time()
 
-                output = nets[i].activate((arm.radius-foods[i].distance, arm.theta-foods[i].angle))
+                output = nets[i].activate((arm.angle[0] + arm.angle[1] - food.angle, arm.x[-1] - food.x, arm.y[-1] - food.y))
                 decision = output.index(max(output))
-                
+
                 if decision == 0:
-                    self.game.rotate_arm(arm, True)
+                    self.game.rotate_arm(arm, 0, True)
                 elif decision == 1:
-                    self.game.rotate_arm(arm, False)
+                    self.game.rotate_arm(arm, 0, False)
                 elif decision == 2:
-                    self.game.lengthen_arm(arm, True)
+                    self.game.rotate_arm(arm, 1, True)
                 elif decision == 3:
-                    self.game.lengthen_arm(arm, False)
+                    self.game.rotate_arm(arm, 1, False)
                 else:
                     pass
 
-                # if genomes[i].fitness >= 300:
-                if self.game.score >= 500:
-                    run = False
-                    break
+                # # if genomes[i].fitness >= 300:
+                # if self.game.score >= 500:
+                #     run = False
+                #     break
 
             
-            game_info = self.game.loop(nets, arms, foods, genomes)
 
             if len(arms) < 1:
                 # self.caculate_fitness(genome, game_info)
                 run = False
                 break
 
+            game_info = self.game.loop(nets, arms, foods, genomes)
             self.game.draw(arms, foods, GEN-1)
 
             pygame.display.update()
@@ -111,8 +111,8 @@ def eval_genomes(genomes, config):
     for genome_id, genome in genomes:
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         nets.append(net)
-        arms.append(Arm())
-        foods.append(Food())
+        arms.append(Arm(2, width//2, height//2))
+        foods.append(Food(width//2, height//2))
         genome.fitness = 0
         ge.append(genome)
 
@@ -124,7 +124,7 @@ def run_neat(config):
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(1))
+    p.add_reporter(neat.Checkpointer(10))
 
     winner = p.run(eval_genomes, 50)
     with open("best.pickle", "wb") as f:
@@ -146,5 +146,5 @@ if __name__ == "__main__":
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
-    # run_neat(config)
-    test_ai(config)
+    run_neat(config)
+    # test_ai(config)
