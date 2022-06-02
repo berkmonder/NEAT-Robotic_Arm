@@ -79,7 +79,6 @@ class RoboticArm:
                 else:
                     pass
 
-                # if self.game.score >= 500:
                 if genomes[i].fitness >= 500:
                     run = False
                     break
@@ -146,5 +145,5 @@ if __name__ == "__main__":
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
-    run_neat(config)
-    # test_ai(config)
+    run_neat(config) # comment this and,
+    # test_ai(config) # uncomment this to test the ai
