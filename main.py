@@ -30,22 +30,22 @@ class RoboticArm:
                     run = False
                     break
 
-            output = net.activate((0, 0))
+            output = net.activate((math.sqrt((self.arm.x[-1] - self.food.x)**2 + (self.arm.y[-1] - self.food.y)**2), (self.arm.angle[-1] + self.arm.angle[-2])/2 - self.food.angle))
             decision = output.index(max(output))
             
             if decision == 0:
-                self.game.rotate_arm(self.arm, True)
+                self.game.rotate_arm(self.arm, 0, True)
             elif decision == 1:
-                self.game.rotate_arm(self.arm, False)
+                self.game.rotate_arm(self.arm, 0, False)
             elif decision == 2:
-                self.game.lengthen_arm(self.arm, True)
+                self.game.rotate_arm(self.arm, 1, True)
             elif decision == 3:
-                self.game.lengthen_arm(self.arm, False)
+                self.game.rotate_arm(self.arm, 1, False)
             else:
                 pass
 
-            # game_info = self.game.loop(net, [self.arm], [self.food], [genome])
-            self.game.draw(self.arm, self.food)
+            game_info = self.game.loop(net, [self.arm], [self.food], [genome])
+            self.game.draw([self.arm], [self.food], GEN)
             pygame.display.update()
             
         pygame.quit()
@@ -65,7 +65,7 @@ class RoboticArm:
             for i, (arm, food) in enumerate(zip(arms, foods)):
                 arm.time += clock.get_time()
 
-                output = nets[i].activate((arm.angle[0] + arm.angle[1] - food.angle, arm.x[-1] - food.x, arm.y[-1] - food.y))
+                output = nets[i].activate((math.sqrt((arm.x[-1] - food.x)**2 + (arm.y[-1] - food.y)**2), (arm.angle[-1] + arm.angle[-2])/2 - food.angle))
                 decision = output.index(max(output))
 
                 if decision == 0:
@@ -79,10 +79,10 @@ class RoboticArm:
                 else:
                     pass
 
-                # # if genomes[i].fitness >= 300:
                 # if self.game.score >= 500:
-                #     run = False
-                #     break
+                if genomes[i].fitness >= 500:
+                    run = False
+                    break
 
             
 

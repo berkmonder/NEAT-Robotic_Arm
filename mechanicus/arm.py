@@ -6,7 +6,7 @@ import random
 
 class Arm:
     COLOR = (0, 0, 255) # BLUE
-    VEL = 2
+    VEL = 1
     ARM_LENGTH = 100
     ARM_WIDTH = 3
     HEAD_RADIUS = 5
@@ -21,7 +21,7 @@ class Arm:
         self.x, self.y = np.ones(number_of_arms) * self.ARM_LENGTH, np.zeros(number_of_arms)
 
         self.time = 0
-        self.max_time = 2000
+        self.max_time = 3000
         self.score = 0
 
     def draw(self, win):

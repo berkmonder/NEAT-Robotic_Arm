@@ -41,8 +41,6 @@ class Game:
         self.window.blit(number_of_arms_text, (3*self.window_width//4 - number_of_arms_text.get_width()//2, 10))
 
     def _handle_colission(self, arm, food, ge):
-        # ge.fitness += 1/math.sqrt((food.x - arm.x)**2 + (food.y - arm.y)**2)
-        # ge.fitness -= math.sqrt((food.x - arm.x)**2 + (food.y - arm.y)**2) / 1000
         if (arm.x[-1] < food.x + food.RADIUS + arm.HEAD_RADIUS and arm.x[-1] > food.x - food.RADIUS - arm.HEAD_RADIUS)\
             and (arm.y[-1] < food.y + food.RADIUS + arm.HEAD_RADIUS and arm.y[-1] > food.y - food.RADIUS - arm.HEAD_RADIUS):
             self.score += 1
@@ -83,8 +81,8 @@ class Game:
 
         :returns: GameInformation instance stating score.
         """
-        for i, arm in enumerate(arms):
-            self._handle_colission(arm, foods[i], ge[i])
+        for i, (arm, food, g) in enumerate(zip(arms, foods, ge)):
+            self._handle_colission(arm, food, g)
 
             if self._kill_lazy(arm):
                 arms.pop(i)
